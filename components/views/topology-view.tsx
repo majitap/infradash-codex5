@@ -1,228 +1,385 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { ActivityIcon, CheckCircle2Icon, CpuIcon, HardDriveIcon, RefreshCwIcon, SparklesIcon } from "lucide-react"
-import { toast } from "sonner"
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  CheckCircle2,
+  CircleAlert,
+  Cloud,
+  Database,
+  GitBranch,
+  HardDrive,
+  Layers3,
+  LayoutGrid,
+  List,
+  Network,
+  Server,
+} from "lucide-react";
+import { topologyNodes, type TopologyNode } from "@/lib/mock-data";
 
-
-import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { topologyNodes, type TopologyNode } from "@/lib/mock-data"
+const coordinates: Record<string, { x: number; y: number; label: string }> = {
+  "cf-edge": { x: 480, y: 56, label: "Cloudflare" },
+  "haproxy-layer": { x: 480, y: 168, label: "HAProxy" },
+  "gitlab-rails": { x: 352, y: 280, label: "GitLab Rails" },
+  "gitlab-sidekiq": { x: 608, y: 280, label: "Sidekiq" },
+  praefect: { x: 120, y: 392, label: "Praefect" },
+  "pg-patroni": { x: 360, y: 392, label: "PostgreSQL" },
+  "redis-sentinel": { x: 600, y: 392, label: "Redis Sentinel" },
+  "s3-minio": { x: 840, y: 392, label: "S3 / MinIO" },
+  "gitaly-shard-01": { x: 96, y: 520, label: "Gitaly 01" },
+  "gitaly-shard-02": { x: 288, y: 520, label: "Gitaly 02" },
+  "gitaly-shard-03": { x: 480, y: 520, label: "Gitaly 03" },
+  "runner-eks-spot": { x: 672, y: 520, label: "EKS 스팟 러너" },
+  "runner-gpu-baremetal": { x: 864, y: 520, label: "GPU 러너" },
+};
+const edges = [
+  ["cf-edge", "haproxy-layer"],
+  ["haproxy-layer", "gitlab-rails"],
+  ["haproxy-layer", "gitlab-sidekiq"],
+  ["gitlab-rails", "praefect"],
+  ["gitlab-rails", "pg-patroni"],
+  ["gitlab-rails", "redis-sentinel"],
+  ["gitlab-rails", "s3-minio"],
+  ["gitlab-sidekiq", "redis-sentinel"],
+  ["gitlab-sidekiq", "runner-eks-spot"],
+  ["gitlab-sidekiq", "runner-gpu-baremetal"],
+  ["praefect", "gitaly-shard-01"],
+  ["praefect", "gitaly-shard-02"],
+  ["praefect", "gitaly-shard-03"],
+];
+const categories = [
+  { key: "all", label: "전체" },
+  { key: "edge", label: "엣지" },
+  { key: "app", label: "애플리케이션" },
+  { key: "storage", label: "저장소" },
+  { key: "database", label: "데이터베이스" },
+  { key: "object", label: "오브젝트" },
+  { key: "runner", label: "러너" },
+];
+const nodeIcons = {
+  edge: Cloud,
+  app: GitBranch,
+  storage: Layers3,
+  database: Database,
+  object: HardDrive,
+  runner: Server,
+};
+const healthy = (node: TopologyNode) => node.status === "healthy";
+function edgePath(from: string, to: string) {
+  const a = coordinates[from],
+    b = coordinates[to],
+    y1 = a.y + 40,
+    y2 = b.y - 40,
+    mid = (y1 + y2) / 2;
+  return `M${a.x} ${y1} C${a.x} ${mid},${b.x} ${mid},${b.x} ${y2}`;
+}
 
 export function TopologyView() {
-  const [selectedNode, setSelectedNode] = React.useState<TopologyNode>(topologyNodes[2]) // Default to GitLab Rails
-  const [categoryFilter, setCategoryFilter] = React.useState<string>("all")
-
-  const filteredNodes = categoryFilter === "all"
-    ? topologyNodes
-    : topologyNodes.filter((n) => n.category === categoryFilter)
-
-  const categories = [
-    { key: "all", label: "전체 아키텍처" },
-    { key: "edge", label: "엣지·부하 분산" },
-    { key: "app", label: "애플리케이션" },
-    { key: "storage", label: "Gitaly 스토리지" },
-    { key: "database", label: "데이터베이스 & 캐시" },
-    { key: "runner", label: "러너 구성" },
-    { key: "object", label: "오브젝트 스토리지" },
-  ]
-
+  const [selected, setSelected] = useState(
+    topologyNodes.find((n) => n.id === "gitlab-rails")!,
+  );
+  const [category, setCategory] = useState("all");
+  const [mode, setMode] = useState<"map" | "list">("map");
+  const viewport = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const element = viewport.current;
+    if (!element) return;
+    const center = () => {
+      element.scrollLeft = Math.max(
+        0,
+        (element.scrollWidth - element.clientWidth) / 2,
+      );
+    };
+    const frame = requestAnimationFrame(center);
+    const observer = new ResizeObserver(center);
+    observer.observe(element);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [mode]);
+  const warning = topologyNodes.filter((n) => !healthy(n)).length;
+  const visible =
+    category === "all"
+      ? topologyNodes
+      : topologyNodes.filter((n) => n.category === category);
+  const StatusIcon = healthy(selected) ? CheckCircle2 : CircleAlert;
   return (
-    <div className="legacy-page flex w-full flex-col gap-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-2">
+    <div className="legacy-page v5-topology flex w-full flex-col gap-8">
+      <div className="topology-page-heading">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-            인프라 구성도
+          <span className="workspace-eyebrow">
+            <Network size={14} />
+            인프라 구성
+          </span>
+          <h1>
+            엣지부터, 러너까지<span>.</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-2">
-            Cloudflare 엣지부터 Rails Puma, Praefect, PostgreSQL, EKS 러너 플릿까지의 실시간 아키텍처
-          </p>
+          <p>엣지부터 데이터와 러너까지. 구성 요소를 눌러 상태를 확인하세요.</p>
         </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => toast.success("토폴로지 메트릭을 동기화했습니다.")}
-            className="rounded-full bg-white hover:bg-slate-50 border-slate-200 text-xs font-bold px-4 h-9 shadow-xs text-slate-700"
-          >
-            <RefreshCwIcon className="size-3.5 mr-2" />
-            새로고침
-          </Button>
-        </div>
+        <span className="topology-health-summary">
+          <i />
+          {warning}개 구성 요소 주의
+        </span>
       </div>
-
-      {/* Category Filter Pills */}
-      <div className="flex flex-wrap gap-2">
-        {categories.map((c) => (
+      <div className="topology-toolbar">
+        <div
+          className="topology-categories"
+          role="group"
+          aria-label="인프라 분류"
+        >
+          {categories.map((c) => (
+            <button
+              key={c.key}
+              aria-pressed={category === c.key}
+              onClick={() => setCategory(c.key)}
+            >
+              {c.label}
+              <span>
+                {c.key === "all"
+                  ? topologyNodes.length
+                  : topologyNodes.filter((n) => n.category === c.key).length}
+              </span>
+            </button>
+          ))}
+        </div>
+        <div
+          className="chart-visual-toggle"
+          role="group"
+          aria-label="구성도 표시 방식"
+        >
           <button
-            key={c.key}
-            onClick={() => setCategoryFilter(c.key)}
-            className={`rounded-full px-4 py-2 text-xs font-semibold transition-all ${
-              categoryFilter === c.key
-                ? "bg-[#6155ed] text-white shadow-xs font-bold"
-                : "bg-white border border-slate-200/80 text-slate-600 hover:bg-slate-50"
-            }`}
+            aria-label="구성도 보기"
+            aria-pressed={mode === "map"}
+            onClick={() => setMode("map")}
           >
-            {c.label}
+            <LayoutGrid size={17} />
           </button>
-        ))}
+          <button
+            aria-label="목록 보기"
+            aria-pressed={mode === "list"}
+            onClick={() => setMode("list")}
+          >
+            <List size={17} />
+          </button>
+        </div>
       </div>
-
-      {/* Main Grid: Architecture Flow + Selected Node Detail */}
-      <div className="grid gap-6 lg:grid-cols-12">
-        {/* Architecture Grid (8 cols) */}
-        <div className="lg:col-span-8 flex flex-col gap-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            {filteredNodes.map((node) => {
-              const isSelected = selectedNode.id === node.id
-              return (
-                <div
-                  key={node.id}
-                  onClick={() => setSelectedNode(node)}
-                  className={`group relative flex cursor-pointer flex-col justify-between rounded-3xl border p-6 transition-all ${
-                    isSelected
-                      ? "border-[#6155ed] bg-white ring-2 ring-[#6155ed]/20 shadow-md"
-                      : "border-slate-200/70 bg-white hover:border-[#6155ed]/50 shadow-xs"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className={`size-2.5 rounded-full ${
-                        node.status === "healthy" ? "bg-emerald-400" : "bg-amber-400"
-                      }`} />
-                      <span className="text-[0.875rem] font-bold text-slate-400">
-                        {node.categoryLabel}
-                      </span>
-                    </div>
-                    <span className="rounded-full bg-slate-100 px-2 py-2 text-[0.8125rem] font-mono text-slate-500 font-semibold">
-                      {node.zone}
-                    </span>
-                  </div>
-
-                  <div className="my-4">
-                    <h4 className="text-sm font-bold text-slate-900 group-hover:text-[#6155ed] transition-colors">
-                      {node.name}
-                    </h4>
-                    <p className="mt-2 line-clamp-1 text-xs text-slate-500">
-                      {node.description}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center justify-between border-t border-slate-100 pt-4 text-xs text-slate-500">
-                    {node.metrics.cpu !== undefined ? (
-                      <span className="flex items-center gap-2 text-[0.875rem]">
-                        <CpuIcon className="size-3 text-slate-400" />
-                        CPU {node.metrics.cpu}%
-                      </span>
-                    ) : node.metrics.storage ? (
-                      <span className="flex items-center gap-2 text-[0.875rem]">
-                        <HardDriveIcon className="size-3 text-slate-400" />
-                        {node.metrics.storage}
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-2 text-[0.875rem]">
-                        <ActivityIcon className="size-3 text-slate-400" />
-                        {node.metrics.qps ?? "정상"}
-                      </span>
-                    )}
-
-                    {node.metrics.latency && (
-                      <span className="font-mono text-slate-800 font-bold text-[0.875rem]">
-                        {node.metrics.latency}
-                      </span>
-                    )}
-                    {node.metrics.instances && (
-                      <span className="font-mono text-slate-800 font-bold text-[0.875rem]">
-                        {node.metrics.instances}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Selected Node Real-time Inspector (4 cols) */}
-        <div className="lg:col-span-4 flex flex-col gap-4">
-          <div className="rounded-3xl border border-slate-200/70 bg-white p-6 shadow-xs sticky top-24 flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <span className="rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-600">
-                {selectedNode.categoryLabel}
-              </span>
-              <span className="inline-flex items-center gap-2 text-xs font-bold text-emerald-600">
-                <CheckCircle2Icon className="size-3.5" />
-                {selectedNode.status === "healthy" ? "정상" : "주의"}
-              </span>
-            </div>
-
+      <div className="topology-layout">
+        <section
+          className="v5-panel architecture-panel"
+          aria-labelledby="architecture-title"
+        >
+          <div className="architecture-panel-heading">
             <div>
-              <h3 className="text-base font-bold text-slate-900">
-                {selectedNode.name}
-              </h3>
-              <p className="text-xs text-slate-400 mt-2">
-                위치: {selectedNode.zone}
-              </p>
+              <h2 id="architecture-title">GitLab 서비스 아키텍처</h2>
+              <p>서울 리전 · 구성 관계 예시</p>
             </div>
-
-            <p className="rounded-2xl bg-slate-50 border border-slate-100 p-4 text-xs text-slate-600 leading-relaxed">
-              {selectedNode.description}
-            </p>
-
-            <div className="flex flex-col gap-4 pt-2">
-              <h5 className="text-xs font-bold text-slate-800">실시간 텔레메트리</h5>
-
-              {selectedNode.metrics.cpu !== undefined && (
-                <div className="flex flex-col gap-2">
-                  <div className="flex justify-between text-xs text-slate-500">
-                    <span>CPU 사용률</span>
-                    <strong className="text-slate-800">{selectedNode.metrics.cpu}%</strong>
-                  </div>
-                  <Progress value={selectedNode.metrics.cpu} className="h-1.5 bg-slate-100" />
-                </div>
-              )}
-
-              {selectedNode.metrics.memory !== undefined && (
-                <div className="flex flex-col gap-2">
-                  <div className="flex justify-between text-xs text-slate-500">
-                    <span>메모리 점유율</span>
-                    <strong className="text-slate-800">{selectedNode.metrics.memory}%</strong>
-                  </div>
-                  <Progress value={selectedNode.metrics.memory} className="h-1.5 bg-slate-100" />
-                </div>
-              )}
-
-              {selectedNode.metrics.latency && (
-                <div className="flex justify-between rounded-xl bg-slate-50 p-4 text-xs text-slate-500">
-                  <span>응답 레이턴시</span>
-                  <strong className="font-mono text-slate-900">{selectedNode.metrics.latency}</strong>
-                </div>
-              )}
-
-              {selectedNode.metrics.qps && (
-                <div className="flex justify-between rounded-xl bg-slate-50 p-4 text-xs text-slate-500">
-                  <span>처리량 (QPS)</span>
-                  <strong className="font-mono text-slate-900">{selectedNode.metrics.qps}</strong>
-                </div>
-              )}
-            </div>
-
-            <div className="rounded-2xl bg-[#6155ed]/10 border border-[#6155ed]/20 p-4 text-xs">
-              <div className="flex items-center gap-2 font-bold text-[#6155ed]">
-                <SparklesIcon className="size-3.5" />
-                <span>Gemini 진단</span>
-              </div>
-              <p className="mt-2 text-[0.875rem] text-slate-600 leading-relaxed">
-                {selectedNode.status === "healthy"
-                  ? "최근 24시간 동안 안정적인 상태입니다. 리소스 임계치 초과 징후가 없습니다."
-                  : "I/O 큐 대기 시간 증가 및 메모리 점유율 상승 추세가 감지되었습니다. 자동 완화 조치를 실행할 수 있습니다."}
-              </p>
-            </div>
+            <span className="architecture-legend">
+              <i className="green" />
+              정상
+              <i className="amber" />
+              주의
+            </span>
           </div>
-        </div>
+          {mode === "map" ? (
+            <>
+              <p className="architecture-pan-hint">
+                좌우로 움직여 전체 구성도를 살펴보세요
+              </p>
+              <div className="architecture-viewport" ref={viewport}>
+                <div className="architecture-canvas">
+                  <svg
+                    viewBox="0 0 960 584"
+                    preserveAspectRatio="none"
+                    aria-hidden="true"
+                  >
+                    <defs>
+                      <linearGradient
+                        id="architecture-edge-gradient"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop stopColor="#c4b9e8" />
+                        <stop offset="1" stopColor="#e3ddef" />
+                      </linearGradient>
+                    </defs>
+                    {edges.map(([from, to]) => (
+                      <path
+                        key={`${from}-${to}`}
+                        d={edgePath(from, to)}
+                        className={
+                          from === selected.id || to === selected.id
+                            ? "architecture-edge selected-edge"
+                            : "architecture-edge"
+                        }
+                      />
+                    ))}
+                  </svg>
+                  {topologyNodes.map((node) => {
+                    const point = coordinates[node.id],
+                      Icon = nodeIcons[node.category];
+                    return (
+                      <button
+                        key={node.id}
+                        className={`architecture-node ${category !== "all" && node.category !== category ? "dimmed-node" : ""}`}
+                        style={{
+                          left: `${(point.x / 960) * 100}%`,
+                          top: point.y - 40,
+                        }}
+                        onClick={() => setSelected(node)}
+                        aria-pressed={selected.id === node.id}
+                        aria-label={`${node.name}, ${healthy(node) ? "정상" : "주의"}`}
+                        aria-controls="node-inspector"
+                      >
+                        <span>
+                          <Icon size={16} />
+                          <i className={healthy(node) ? "green" : "amber"} />
+                        </span>
+                        <strong>{point.label}</strong>
+                        <small>
+                          {node.metrics.cpu !== undefined
+                            ? `CPU ${node.metrics.cpu}%`
+                            : node.metrics.latency
+                              ? `${node.metrics.latency}`
+                              : node.categoryLabel}
+                        </small>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="topology-node-list">
+              {visible.map((node) => {
+                const Icon = nodeIcons[node.category];
+                return (
+                  <button
+                    key={node.id}
+                    className="topology-list-node"
+                    aria-pressed={selected.id === node.id}
+                    onClick={() => setSelected(node)}
+                    aria-controls="node-inspector"
+                  >
+                    <span>
+                      <Icon size={18} />
+                      <i className={healthy(node) ? "green" : "amber"} />
+                    </span>
+                    <strong>{node.name}</strong>
+                    <small>{node.categoryLabel}</small>
+                    <span className="list-node-metrics">
+                      {node.metrics.cpu !== undefined
+                        ? `CPU ${node.metrics.cpu}%`
+                        : (node.metrics.storage ?? node.metrics.qps ?? "정상")}
+                      <ArrowUpRight size={15} />
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          <div className="architecture-caption">
+            <span>노드 선택으로 세부 수치를 탐색하세요</span>
+            <a href="#node-inspector">
+              선택한 노드 상세
+              <ArrowRight size={14} />
+            </a>
+          </div>
+        </section>
+        <aside
+          className="v5-panel topology-inspector"
+          id="node-inspector"
+          aria-label="선택한 노드 상세"
+        >
+          <div className="inspector-header">
+            <span className="section-kicker">노드 인스펙터</span>
+            <span
+              className={`inspector-status ${healthy(selected) ? "" : "warning"}`}
+            >
+              <StatusIcon size={14} />
+              {healthy(selected) ? "정상" : "주의"}
+            </span>
+          </div>
+          <span className="inspector-category">{selected.categoryLabel}</span>
+          <h2>{selected.name}</h2>
+          <p className="inspector-zone">{selected.zone}</p>
+          <p className="inspector-description">{selected.description}</p>
+          <div className="inspector-metrics" aria-live="polite">
+            {(
+              [
+                { key: "cpu", label: "CPU 사용률" },
+                { key: "memory", label: "메모리 사용률" },
+              ] as const
+            ).map((metric) => {
+              const value = selected.metrics[metric.key];
+              return value !== undefined ? (
+                <div key={metric.key} className="inspector-meter">
+                  <div>
+                    <span>{metric.label}</span>
+                    <strong>{value}%</strong>
+                  </div>
+                  <span
+                    className={
+                      value >= 75 ? "meter-track elevated" : "meter-track"
+                    }
+                  >
+                    <i style={{ width: `${value}%` }} />
+                  </span>
+                </div>
+              ) : null;
+            })}
+            {selected.metrics.latency && (
+              <div className="inspector-stat">
+                <span>응답 시간</span>
+                <strong>{selected.metrics.latency}</strong>
+              </div>
+            )}
+            {selected.metrics.qps && (
+              <div className="inspector-stat">
+                <span>처리량</span>
+                <strong>{selected.metrics.qps}</strong>
+              </div>
+            )}
+            {selected.metrics.storage && (
+              <div className="inspector-stat">
+                <span>스토리지</span>
+                <strong>{selected.metrics.storage}</strong>
+              </div>
+            )}
+            {selected.metrics.instances && (
+              <div className="inspector-stat">
+                <span>구성</span>
+                <strong>{selected.metrics.instances}</strong>
+              </div>
+            )}
+          </div>
+          <div
+            className={`inspector-observation ${healthy(selected) ? "" : "warning"}`}
+          >
+            <span>
+              {healthy(selected)
+                ? "안정적으로 동작하고 있어요"
+                : "한 번 더 살펴보세요"}
+            </span>
+            <p>
+              {healthy(selected)
+                ? "이 스냅샷에서 리소스 초과 징후는 확인되지 않았어요."
+                : "리소스 사용률이 높아졌어요. 관련 지표와 조치 제안을 함께 확인하세요."}
+            </p>
+            <Link href="/ai-ops">
+              AI 진단 보기
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+          <span className="inspector-timestamp">
+            2026.10.31 10:12 · 모의 스냅샷
+          </span>
+        </aside>
       </div>
     </div>
-  )
+  );
 }

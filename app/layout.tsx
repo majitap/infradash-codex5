@@ -3,6 +3,7 @@ import "@fontsource-variable/geist-mono";
 import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
 import "./globals.css";
 import "./console.css";
+import "./atelier.css";
 
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { CommandMenuProvider } from "@/components/layout/command-menu";
@@ -14,9 +15,9 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 export const metadata: Metadata = {
-  title: { default: "InfraDash · 인프라, 한눈에", template: "%s · InfraDash" },
+  title: { default: "InfraDash · 흐름을 더 선명하게", template: "%s · InfraDash" },
   description:
-    "배포부터 운영까지, 필요한 정보만 선명하게. GitLab 인프라 운영 대시보드. 모의 데이터 데모입니다.",
+    "배포의 흐름과 연결된 인프라를 더 선명하게. 비교 차트와 서비스 맵을 갖춘 GitLab 운영 대시보드. 모의 데이터 데모입니다.",
 };
 
 export default function RootLayout({

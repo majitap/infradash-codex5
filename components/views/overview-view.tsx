@@ -1,357 +1,323 @@
 "use client";
 
-import * as React from "react";
+import { useId, useState } from "react";
 import Link from "next/link";
 import {
   ArrowDownToLine,
   ArrowRight,
   ArrowUpRight,
   Check,
-  CheckCircle2,
   ChevronRight,
-  CircleAlert,
   Clock3,
   GitBranch,
-  LoaderCircle,
   RefreshCw,
-  X,
+  TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
+import { AnimatedNumber } from "@/components/overview/animated-number";
+import { FlowChart } from "@/components/overview/flow-chart";
+import { InfrastructureCard } from "@/components/overview/infrastructure-card";
+import { PipelineDetail } from "@/components/overview/pipeline-detail";
+import { pipelineStatus } from "@/components/overview/pipeline-status";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  dailyPipelines,
-  successRate,
+  avgQueueSeconds,
   recentPipelines,
   runnerCounts,
-  runnerBusy,
   runnerCapacity,
-  avgQueueSeconds,
+  finOpsData,
   incidents,
   type RecentPipeline,
 } from "@/lib/mock-data";
-import { stageLabel } from "@/lib/localization";
+import {
+  getOverview,
+  number,
+  pipelineCsv,
+  smoothPath,
+  type OverviewRange,
+} from "@/lib/overview-data";
 
-const int = new Intl.NumberFormat("ko-KR");
-const statusInfo = {
-  success: { label: "성공", icon: CheckCircle2 },
-  failed: { label: "실패", icon: CircleAlert },
-  running: { label: "실행 중", icon: LoaderCircle },
-  pending: { label: "대기", icon: Clock3 },
-  canceled: { label: "취소", icon: X },
-};
-type Filter = "all" | "running" | "failed";
-const shortDate = (date: string) =>
-  `${Number(date.slice(5, 7))}.${Number(date.slice(8))}`;
-
-export function OverviewView() {
-  const [range, setRange] = React.useState<7 | 30>(7);
-  const [selectedDay, setSelectedDay] = React.useState<string | null>(null);
-  const [filter, setFilter] = React.useState<Filter>("all");
-  const [pipeline, setPipeline] = React.useState<RecentPipeline | null>(null);
-  const [refreshed, setRefreshed] = React.useState(false);
-  const days = dailyPipelines.slice(-range);
-  const previous = dailyPipelines.slice(-range * 2, -range);
-  const rate = successRate(days);
-  const rateDiff = rate - successRate(previous);
-  const total = days.reduce(
-    (sum, d) => sum + d.success + d.failed + d.canceled,
-    0,
+function MetricWave({
+  data,
+  featured = false,
+}: {
+  data: number[];
+  featured?: boolean;
+}) {
+  const id = useId().replaceAll(":", "");
+  const min = Math.min(...data) - 2,
+    max = Math.max(...data) + 2;
+  const points = data.map(
+    (n, i) =>
+      [
+        (i / (data.length - 1)) * 240,
+        64 - ((n - min) / (max - min)) * 48,
+      ] as const,
   );
-  const max = Math.max(...days.map((d) => d.success + d.failed + d.canceled));
-  const selected =
-    days.find((d) => d.date === selectedDay) ?? days[days.length - 1];
-  const utilization = Math.round((runnerBusy / runnerCapacity) * 100);
+  const line = smoothPath(points);
+  return (
+    <svg
+      className={featured ? "metric-wave featured-wave" : "metric-wave"}
+      viewBox="0 0 240 80"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id={`wave-${id}`} x1="0" y1="0" x2="0" y2="1">
+          <stop
+            stopColor="currentColor"
+            stopOpacity={featured ? ".24" : ".12"}
+          />
+          <stop offset="1" stopColor="currentColor" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={`${line} L240 80 L0 80Z`} fill={`url(#wave-${id})`} />
+      <path
+        d={line}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={featured ? "2" : "2.5"}
+        vectorEffect="non-scaling-stroke"
+      />
+      <circle cx={240} cy={points.at(-1)![1]} r="3" fill="currentColor" />
+    </svg>
+  );
+}
+
+type Filter = "all" | "running" | "failed";
+export function OverviewView() {
+  const [range, setRange] = useState<OverviewRange>(7);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [filter, setFilter] = useState<Filter>("all");
+  const [pipeline, setPipeline] = useState<RecentPipeline | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshed, setRefreshed] = useState(false);
+  const summary = getOverview(range);
+  const { days, previous, rate, delta, total } = summary;
   const list = recentPipelines
     .filter((p) => filter === "all" || p.status === filter)
     .slice(0, 5);
-  const unresolved = incidents.filter((i) => i.status !== "resolved");
-
+  const openIncidents = incidents.filter((i) => i.status !== "resolved").length;
+  const goalGap = Math.max(0, 95 - rate);
   function downloadReport() {
-    const csv =
-      "\uFEFF날짜,성공,실패,취소\r\n" +
-      days
-        .map((d) => `${d.date},${d.success},${d.failed},${d.canceled}`)
-        .join("\r\n");
     const url = URL.createObjectURL(
-      new Blob([csv], { type: "text/csv;charset=utf-8;" }),
+      new Blob([pipelineCsv(days)], { type: "text/csv;charset=utf-8;" }),
     );
     const link = document.createElement("a");
     link.href = url;
     link.download = `infradash-${range}days-2026-10-31.csv`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    toast.success("선택한 기간의 리포트를 저장했습니다");
+    toast.success(`최근 ${range}일 실행 리포트를 저장했습니다`);
   }
-
+  function refresh() {
+    setRefreshing(true);
+    setTimeout(() => {
+      setRefreshing(false);
+      setRefreshed(true);
+      toast.success("2026.10.31 스냅샷을 다시 확인했습니다");
+    }, 560);
+  }
   return (
-    <div className="overview">
-      <div className="overview-heading">
+    <div className="overview v5-overview">
+      <div className="v5-page-intro">
         <div>
-          <p className="eyebrow">GITLAB / MAJITAP</p>
-          <h1>인프라, 한눈에.</h1>
-          <p className="page-description">
-            배포부터 운영까지, 오늘의 흐름을 확인하세요.
-          </p>
+          <div className="workspace-eyebrow">
+            <span />
+            Majitap 워크스페이스
+          </div>
+          <h1>
+            인프라, 더 선명하게<span>.</span>
+          </h1>
+          <p>지금의 상태와 다음에 할 일을 한 화면에서.</p>
         </div>
-        <div className="overview-heading-actions">
-          <span className="snapshot-date">2026년 10월 31일 토요일</span>
-          <button className="quiet-button" onClick={downloadReport}>
+        <div className="v5-intro-actions">
+          <div className="v5-snapshot">
+            <span>2026년 10월 31일</span>
+            <span>토요일 · 10:12 스냅샷</span>
+          </div>
+          <button className="v5-export" onClick={downloadReport}>
             <ArrowDownToLine size={18} />
-            리포트 내보내기
+            <span>리포트 내보내기</span>
           </button>
         </div>
       </div>
-
-      <div className="overview-toolbar">
-        <div className="period-control" role="group" aria-label="조회 기간">
+      <div className="v5-overview-toolbar">
+        <div className="v5-period-control" role="group" aria-label="조회 기간">
           {([7, 30] as const).map((n) => (
             <button
               key={n}
               aria-pressed={range === n}
               onClick={() => {
                 setRange(n);
-                setSelectedDay(null);
+                setSelectedDate(null);
               }}
             >
               최근 {n}일
             </button>
           ))}
         </div>
-        <button
-          className="refresh-button"
-          onClick={() => {
-            setRefreshed(true);
-            toast.success("데모 스냅샷을 다시 확인했습니다");
-          }}
-        >
-          <RefreshCw size={14} />
-          <span>{refreshed ? "방금 확인" : "10:12 기준"}</span>
-        </button>
+        <div className="overview-status-tools">
+          <Link href="/incidents" className="quiet-alert">
+            <span />
+            {openIncidents}건 확인 필요
+            <ChevronRight size={14} />
+          </Link>
+          <button
+            className="v5-refresh"
+            aria-label="스냅샷 다시 확인"
+            aria-busy={refreshing}
+            disabled={refreshing}
+            onClick={refresh}
+          >
+            <RefreshCw
+              size={15}
+              className={refreshing ? "is-refreshing" : ""}
+            />
+            <span>
+              {refreshing ? "확인 중" : refreshed ? "방금 확인" : "최근 스냅샷"}
+            </span>
+          </button>
+        </div>
       </div>
 
-      <div className="overview-stats">
-        <Link href="/pipelines" className="metric-card metric-featured">
-          <div className="metric-label">
-            파이프라인 성공률
-            <ArrowUpRight size={20} />
+      <div className="v5-metric-grid">
+        <Link href="/pipelines" className="v5-metric v5-featured-metric">
+          <div className="v5-metric-label">
+            <span>파이프라인 성공률</span>
+            <ArrowUpRight size={18} />
           </div>
-          <div className="metric-number">
-            {rate.toFixed(1)}
+          <div className="v5-metric-value">
+            <AnimatedNumber value={rate} digits={1} />
             <span>%</span>
           </div>
-          <div className="metric-note">
-            <span className="metric-change">
-              {rateDiff >= 0 ? "+" : ""}
-              {rateDiff.toFixed(1)}%p
+          <div className="v5-metric-bottom">
+            <span className="v5-change">
+              <TrendingUp size={14} />
+              {delta >= 0 ? "+" : ""}
+              {delta.toFixed(1)}%p
             </span>
             <span>이전 {range}일 대비</span>
           </div>
-        </Link>
-        <Link href="/pipelines" className="metric-card">
-          <div className="metric-label">
-            전체 파이프라인
-            <ArrowUpRight size={20} />
+          <div className="metric-goal">
+            <span>
+              {goalGap > 0
+                ? `목표 95%까지 ${goalGap.toFixed(1)}%p`
+                : `목표 95% 달성`}
+            </span>
+            <span className="goal-track">
+              <i style={{ width: `${Math.min((rate / 95) * 100, 100)}%` }} />
+            </span>
           </div>
-          <div className="metric-number">
-            {int.format(total)}
+          <MetricWave
+            featured
+            data={days.map((d) => (d.success / (d.success + d.failed)) * 100)}
+          />
+        </Link>
+        <Link href="/pipelines" className="v5-metric">
+          <div className="v5-metric-label">
+            <span>전체 파이프라인</span>
+            <ArrowUpRight size={18} />
+          </div>
+          <div className="v5-metric-value">
+            <AnimatedNumber value={total} />
             <span>회</span>
           </div>
-          <div className="metric-note">
-            <span className="status-dot purple" />
+          <div className="v5-metric-bottom">
+            <span className="metric-dot purple" />
             최근 {range}일 실행
           </div>
-        </Link>
-        <Link href="/runners" className="metric-card">
-          <div className="metric-label">
-            온라인 러너
-            <ArrowUpRight size={20} />
+          <div className="metric-mini-summary">
+            <span>
+              성공 <strong>{number.format(summary.success)}</strong>
+            </span>
+            <span>
+              실패 <strong>{number.format(summary.failed)}</strong>
+            </span>
           </div>
-          <div className="metric-number">
-            {runnerCounts.online}
+        </Link>
+        <Link href="/runners" className="v5-metric">
+          <div className="v5-metric-label">
+            <span>온라인 러너</span>
+            <ArrowUpRight size={18} />
+          </div>
+          <div className="v5-metric-value">
+            <AnimatedNumber value={runnerCounts.online} />
             <span>/ {runnerCounts.all}대</span>
           </div>
-          <div className="metric-note">
-            <span className="status-dot green" />
-            동시 작업 {runnerCapacity}개 수용 가능
+          <div className="v5-metric-bottom">
+            <span className="metric-dot green" />
+            동시 작업 {runnerCapacity}개 수용
+          </div>
+          <div
+            className="runner-availability"
+            role="img"
+            aria-label={`온라인 ${runnerCounts.online}, 오프라인 ${runnerCounts.offline}, 일시정지 ${runnerCounts.paused}`}
+          >
+            {Array.from({ length: runnerCounts.all }, (_, i) => (
+              <i
+                key={i}
+                className={
+                  i < runnerCounts.online
+                    ? "available"
+                    : i < runnerCounts.online + runnerCounts.offline
+                      ? "offline"
+                      : "paused"
+                }
+              />
+            ))}
           </div>
         </Link>
-        <Link href="/pipelines" className="metric-card">
-          <div className="metric-label">
-            평균 대기 시간
-            <ArrowUpRight size={20} />
+        <Link href="/pipelines" className="v5-metric">
+          <div className="v5-metric-label">
+            <span>평균 대기 시간</span>
+            <ArrowUpRight size={18} />
           </div>
-          <div className="metric-number">
-            {avgQueueSeconds}
+          <div className="v5-metric-value">
+            <AnimatedNumber value={avgQueueSeconds} />
             <span>초</span>
           </div>
-          <div className="metric-note">
-            <span className="status-dot green" />
-            작업 생성부터 러너 할당까지
+          <div className="v5-metric-bottom">
+            <span className="metric-dot green" />
+            러너 할당까지 걸린 시간
+          </div>
+          <div className="queue-context">
+            <Clock3 size={16} />
+            <span>작업 생성 → 러너 할당</span>
           </div>
         </Link>
       </div>
 
-      <div className="overview-main-grid">
-        <section
-          className="panel pipeline-chart-panel"
-          aria-labelledby="pipeline-chart-title"
-        >
-          <div className="panel-heading">
-            <div>
-              <h2 id="pipeline-chart-title">꾸준히 이어지는 배포</h2>
-              <p>일별 파이프라인 실행 추이</p>
-            </div>
-            <Link className="text-link" href="/pipelines">
-              상세 보기
-              <ArrowUpRight size={16} />
-            </Link>
-          </div>
-          <div className="chart-summary">
-            <strong>
-              {int.format(total)}
-              <span>회</span>
-            </strong>
-            <span>
-              {shortDate(days[0].date)} —{" "}
-              {shortDate(days[days.length - 1].date)}
-            </span>
-          </div>
-          <div
-            className={`capsule-chart ${range === 30 ? "month-chart" : ""}`}
-            role="group"
-            aria-label="날짜별 파이프라인. 날짜를 선택하면 실행 건수를 확인할 수 있습니다."
-          >
-            {days.map((day, i) => {
-              const sum = day.success + day.failed + day.canceled;
-              return (
-                <button
-                  key={day.date}
-                  className="capsule-column"
-                  aria-pressed={selected.date === day.date}
-                  aria-label={`${day.date}, 성공 ${day.success}회, 실패 ${day.failed}회, 취소 ${day.canceled}회`}
-                  onClick={() => setSelectedDay(day.date)}
-                >
-                  <span className="capsule-track">
-                    <span
-                      className="capsule-bar"
-                      style={{ height: `${(sum / max) * 100}%` }}
-                    >
-                      <span
-                        className="capsule-failed"
-                        style={{ height: `${(day.failed / sum) * 100}%` }}
-                      />
-                    </span>
-                  </span>
-                  <span className="capsule-day">
-                    {range === 7
-                      ? new Date(`${day.date}T12:00:00`).toLocaleDateString(
-                          "ko-KR",
-                          { weekday: "short" },
-                        )
-                      : i % 5 === 0 || i === 29
-                        ? shortDate(day.date)
-                        : ""}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          <div className="chart-caption" aria-live="polite">
-            <div className="chart-legend">
-              <span>
-                <i className="purple" />
-                성공·취소
-              </span>
-              <span>
-                <i className="pink" />
-                실패
-              </span>
-            </div>
-            <p>
-              <strong>{shortDate(selected.date)}</strong> 성공{" "}
-              {int.format(selected.success)} · 실패 {selected.failed} · 취소{" "}
-              {selected.canceled}
-            </p>
-          </div>
-        </section>
+      <div className="v5-analysis-grid">
+        <FlowChart
+          days={days}
+          previous={previous}
+          total={total}
+          selectedDate={selectedDate}
+          onSelect={setSelectedDate}
+        />
+        <InfrastructureCard />
+      </div>
 
-        <section className="panel runner-panel" aria-labelledby="runner-title">
-          <div className="panel-heading">
+      <div className="v5-analysis-grid v5-lower-grid">
+        <section
+          className="v5-panel v5-recent-panel"
+          aria-labelledby="recent-pipelines-title"
+        >
+          <div className="v5-panel-head">
             <div>
-              <h2 id="runner-title">러너 가동 현황</h2>
-              <p>작업을 처리할 여유가 있어요</p>
+              <span className="section-kicker">최근 실행</span>
+              <h2 id="recent-pipelines-title">최근 파이프라인</h2>
             </div>
             <Link
-              href="/runners"
-              className="icon-link"
-              aria-label="러너 상세 보기"
+              href="/pipelines"
+              className="v5-icon-link"
+              aria-label="전체 파이프라인 보기"
             >
               <ArrowUpRight size={20} />
             </Link>
           </div>
           <div
-            className="runner-gauge"
-            role="img"
-            aria-label={`동시 실행 슬롯 ${runnerCapacity}개 중 ${runnerBusy}개 사용, 사용률 ${utilization}%`}
-            style={{
-              background: `conic-gradient(from 230deg, var(--primary) 0deg ${utilization * 2.8}deg, var(--soft-purple) ${utilization * 2.8}deg 280deg, transparent 280deg)`,
-            }}
-          >
-            <div>
-              <span>슬롯 사용률</span>
-              <strong>
-                {utilization}
-                <span>%</span>
-              </strong>
-              <span>
-                {runnerBusy} / {runnerCapacity}개 사용 중
-              </span>
-            </div>
-          </div>
-          <div className="runner-status-row">
-            <span>
-              <i className="green" />
-              온라인<strong>{runnerCounts.online}</strong>
-            </span>
-            <span>
-              <i className="gray" />
-              오프라인<strong>{runnerCounts.offline}</strong>
-            </span>
-            <span>
-              <i className="amber" />
-              일시정지<strong>{runnerCounts.paused}</strong>
-            </span>
-          </div>
-          <Link href="/runners" className="runner-footer-link">
-            러너 상태 확인하기
-            <ArrowRight size={16} />
-          </Link>
-        </section>
-      </div>
-
-      <div className="overview-main-grid lower-grid">
-        <section
-          className="panel recent-pipelines"
-          aria-labelledby="recent-title"
-        >
-          <div className="panel-heading">
-            <div>
-              <h2 id="recent-title">최근 파이프라인</h2>
-              <p>프로젝트의 마지막 실행을 확인하세요</p>
-            </div>
-            <Link className="text-link" href="/pipelines">
-              전체 보기
-              <ArrowUpRight size={16} />
-            </Link>
-          </div>
-          <div
-            className="pipeline-tabs"
+            className="v5-pipeline-tabs"
             role="group"
             aria-label="파이프라인 상태 필터"
           >
@@ -364,8 +330,8 @@ export function OverviewView() {
             ).map((f) => (
               <button
                 key={f.key}
-                aria-pressed={filter === f.key}
                 onClick={() => setFilter(f.key)}
+                aria-pressed={filter === f.key}
               >
                 {f.label}
                 <span>
@@ -376,178 +342,133 @@ export function OverviewView() {
               </button>
             ))}
           </div>
-          <div className="pipeline-list">
+          <div className="v5-pipeline-list" key={filter}>
             {list.map((p) => {
-              const meta = statusInfo[p.status];
-              const Icon = meta.icon;
+              const meta = pipelineStatus[p.status],
+                Icon = meta.icon;
               return (
                 <button
                   key={p.id}
-                  className="pipeline-row"
+                  className="v5-pipeline-row"
                   onClick={() => setPipeline(p)}
                   aria-label={`${p.project} #${p.id} ${meta.label} 상세 보기`}
                 >
-                  <Icon size={20} className={`pipeline-state ${p.status}`} />
-                  <span className="pipeline-project">
+                  <span className={`v5-pipeline-icon ${p.status}`}>
+                    <Icon size={20} />
+                  </span>
+                  <span className="v5-pipeline-project">
                     <strong>{p.project}</strong>
                     <span>
-                      <GitBranch size={14} />
+                      <GitBranch size={13} />
                       {p.ref}
                       <i />#{p.id}
                     </span>
                   </span>
+                  <span className="v5-stage-preview" aria-hidden="true">
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <i
+                        key={i}
+                        className={
+                          p.status === "success"
+                            ? "complete"
+                            : p.status === "failed"
+                              ? i === 1
+                                ? "broken"
+                                : i < 1
+                                  ? "complete"
+                                  : ""
+                              : i < 1
+                                ? "complete"
+                                : i === 1
+                                  ? "active"
+                                  : ""
+                        }
+                      >
+                        {p.status === "success" || i === 0 ? (
+                          <Check size={8} />
+                        ) : null}
+                      </i>
+                    ))}
+                  </span>
                   <span className={`pipeline-status ${p.status}`}>
                     {meta.label}
                   </span>
-                  <span className="pipeline-duration">
+                  <span className="v5-pipeline-time">
                     {Math.floor(p.durationSeconds / 60)}분{" "}
                     {p.durationSeconds % 60}초
                   </span>
-                  <ChevronRight size={16} />
+                  <ChevronRight className="pipeline-row-chevron" size={16} />
                 </button>
               );
             })}
           </div>
+          <Link href="/projects" className="recent-panel-footer">
+            <span>모든 프로젝트 둘러보기</span>
+            <ArrowRight size={16} />
+          </Link>
         </section>
 
         <section
-          className="panel attention-panel"
+          className="v5-panel v5-attention-panel"
           aria-labelledby="attention-title"
         >
-          <div className="panel-heading">
+          <div className="v5-panel-head">
             <div>
-              <h2 id="attention-title">
-                지금 확인할 일
-                <span className="attention-count">{unresolved.length + 1}</span>
-              </h2>
-              <p>중요한 일부터 차근차근</p>
+              <span className="section-kicker">다음 한 걸음</span>
+              <h2 id="attention-title">확인이 필요한 3가지</h2>
             </div>
+            <span className="v5-attention-count">3</span>
           </div>
-          <div className="attention-list">
-            <Link href="/incidents" className="attention-item">
-              <span className="attention-marker red" />
+          <div className="v5-attention-list">
+            <Link href="/incidents" className="v5-attention-item">
+              <span className="attention-number">01</span>
               <div>
-                <span className="attention-category">인시던트 · 대응 중</span>
+                <span className="v5-attention-tag red-tag">
+                  인시던트 · 대응 중
+                </span>
                 <h3>결제 API 응답 오류</h3>
-                <p>실패 요청을 확인하고, 복구 진행 상황을 살펴보세요.</p>
+                <p>복구 진행 상황을 확인해 주세요.</p>
               </div>
-              <ArrowUpRight size={18} />
+              <ArrowUpRight size={17} />
             </Link>
-            <Link href="/storage" className="attention-item">
-              <span className="attention-marker amber" />
+            <Link href="/storage" className="v5-attention-item">
+              <span className="attention-number">02</span>
               <div>
-                <span className="attention-category">스토리지 · 주의</span>
+                <span className="v5-attention-tag amber-tag">
+                  스토리지 · 주의
+                </span>
                 <h3>Gitaly 볼륨 사용률 91%</h3>
-                <p>여유 공간이 부족해지기 전에 용량을 점검하세요.</p>
+                <p>여유 공간이 부족해지기 전에 점검하세요.</p>
               </div>
-              <ArrowUpRight size={18} />
+              <ArrowUpRight size={17} />
             </Link>
-            <Link href="/finops" className="attention-item">
-              <span className="attention-marker purple" />
+            <Link href="/finops" className="v5-attention-item">
+              <span className="attention-number">03</span>
               <div>
-                <span className="attention-category">비용 · 개선 제안</span>
-                <h3>유휴 비용을 줄일 수 있어요</h3>
-                <p>월 $2,840의 미사용 리소스를 확인하세요.</p>
+                <span className="v5-attention-tag purple-tag">
+                  비용 · 개선 제안
+                </span>
+                <h3>월 ${number.format(finOpsData.idleWaste)}의 기회</h3>
+                <p>사용하지 않는 리소스를 정리할 수 있어요.</p>
               </div>
-              <ArrowUpRight size={18} />
+              <ArrowUpRight size={17} />
             </Link>
           </div>
-          <Link href="/ai-ops" className="insight-link">
-            <span>다음 조치가 고민된다면</span>
-            <strong>
-              AI 운영 센터에서 확인
-              <ArrowRight size={16} />
-            </strong>
+          <Link href="/ai-ops" className="v5-insight-cta">
+            <span className="insight-orbit" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+            <span>
+              <small>조금 더 깊이 살펴볼까요?</small>
+              <strong>AI 운영 센터에서 이어보기</strong>
+            </span>
+            <ArrowRight size={18} />
           </Link>
         </section>
       </div>
-
-      <Dialog
-        open={pipeline !== null}
-        onOpenChange={(open) => {
-          if (!open) setPipeline(null);
-        }}
-      >
-        <DialogContent className="pipeline-dialog sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>파이프라인 #{pipeline?.id}</DialogTitle>
-            <DialogDescription>
-              {pipeline?.project} · {pipeline?.ref}
-            </DialogDescription>
-          </DialogHeader>
-          {pipeline && (
-            <>
-              <div className="pipeline-detail-status">
-                <span className={`pipeline-status ${pipeline.status}`}>
-                  {statusInfo[pipeline.status].label}
-                </span>
-                <span>
-                  실행 시간 {Math.floor(pipeline.durationSeconds / 60)}분{" "}
-                  {pipeline.durationSeconds % 60}초
-                </span>
-              </div>
-              <dl className="pipeline-detail-meta">
-                <div>
-                  <dt>실행자</dt>
-                  <dd>{pipeline.triggeredBy.name}</dd>
-                </div>
-                <div>
-                  <dt>시작 시간</dt>
-                  <dd>{pipeline.startedAt.replace("T", " ").slice(0, 16)}</dd>
-                </div>
-              </dl>
-              <div className="pipeline-stage-list">
-                {(["build", "test", "lint", "security", "deploy"] as const).map(
-                  (stage, i) => {
-                    const failed = pipeline.failedStage === stage;
-                    const failedIndex = (
-                      ["build", "test", "lint", "security", "deploy"] as const
-                    ).findIndex((s) => s === pipeline.failedStage);
-                    const waiting =
-                      pipeline.status === "canceled" ||
-                      pipeline.status === "pending" ||
-                      (pipeline.status === "failed" && i > failedIndex) ||
-                      (pipeline.status === "running" && i > 1);
-                    return (
-                      <div key={stage}>
-                        <span
-                          className={
-                            failed ? "failed" : waiting ? "waiting" : "success"
-                          }
-                        >
-                          {failed ? (
-                            <X size={16} />
-                          ) : waiting ? (
-                            <Clock3 size={16} />
-                          ) : pipeline.status === "running" && i === 1 ? (
-                            <LoaderCircle size={16} />
-                          ) : (
-                            <Check size={16} />
-                          )}
-                        </span>
-                        <strong>{stageLabel(stage)}</strong>
-                        <span>
-                          {failed
-                            ? "실패"
-                            : waiting
-                              ? "대기"
-                              : pipeline.status === "running" && i === 1
-                                ? "실행 중"
-                                : "완료"}
-                        </span>
-                      </div>
-                    );
-                  },
-                )}
-              </div>
-              <p className="detail-note">
-                데모 실행 내역입니다. 실제 로그와 재실행은 연결되어 있지
-                않습니다.
-              </p>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+      <PipelineDetail pipeline={pipeline} onClose={() => setPipeline(null)} />
     </div>
   );
 }

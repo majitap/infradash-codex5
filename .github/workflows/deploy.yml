@@ -33,6 +33,9 @@ jobs:
       - name: Check 8px spacing
         run: npm run check:spacing
 
+      - name: Test data and chart geometry
+        run: npm test
+
       - name: Lint
         run: npm run lint
 

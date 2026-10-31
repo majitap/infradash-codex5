@@ -4,7 +4,7 @@ import { ThemeProvider as NextThemesProvider } from "next-themes"
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   return (
-    <NextThemesProvider attribute="class" defaultTheme="light" storageKey="infradash-codex4-theme" enableSystem disableTransitionOnChange>
+    <NextThemesProvider attribute="class" defaultTheme="light" storageKey="infradash-codex5-theme" enableSystem disableTransitionOnChange>
       {children}
     </NextThemesProvider>
   )

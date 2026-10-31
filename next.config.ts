@@ -1,9 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Static export for GitHub Pages (https://majitap.github.io/infradash-codex4/)
+  // Static export for GitHub Pages (https://majitap.github.io/infradash-codex5/)
   output: "export",
-  basePath: "/infradash-codex4",
+  basePath: "/infradash-codex5",
   trailingSlash: true,
   images: {
     unoptimized: true,

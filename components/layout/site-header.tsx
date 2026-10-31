@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Bell, ChevronRight, Search } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -20,6 +21,11 @@ import {
 export function SiteHeader() {
   const { setOpen } = useCommandMenu();
   const title = findNavItem(usePathname())?.title ?? "개요";
+  const [shortcut, setShortcut] = useState("Ctrl K");
+  useEffect(() => {
+    if (navigator.platform.toUpperCase().includes("MAC"))
+      requestAnimationFrame(() => setShortcut("⌘ K"));
+  }, []);
   return (
     <header className="site-header">
       <div className="header-location">
@@ -35,8 +41,8 @@ export function SiteHeader() {
           aria-label="페이지와 프로젝트 검색"
         >
           <Search size={18} />
-          <span>검색</span>
-          <kbd>⌘ K</kbd>
+          <span>무엇을 찾으세요?</span>
+          <kbd>{shortcut}</kbd>
         </button>
         <div className="header-separator" />
         <DropdownMenu>

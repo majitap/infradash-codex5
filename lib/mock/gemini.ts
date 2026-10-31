@@ -245,7 +245,7 @@ export const topologyNodes: TopologyNode[] = [
     category: "storage",
     categoryLabel: "Git 저장소 샤드",
     status: "warning",
-    metrics: { cpu: 78, memory: 86, storage: "6.2 TB / 10 TB (62%)", latency: "64ms" },
+    metrics: { cpu: 78, memory: 86, storage: "9.1 TB / 10 TB (91%)", latency: "64ms" },
     description: "대형 모노레포 및 빌드 빈도가 높은 프로젝트 전용 샤드 (I/O 병목 경보)",
     zone: "스토리지 샤드 B",
   },

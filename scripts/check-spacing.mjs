@@ -23,14 +23,16 @@ for (const file of [...walk("app"), ...walk("components")].filter((file) =>
       errors.push(`${file}: ${match[0]} is outside the 8px scale`);
   }
 }
-const css = fs.readFileSync("app/console.css", "utf8");
+const css = ["app/console.css", "app/atelier.css"]
+  .map((file) => fs.readFileSync(file, "utf8"))
+  .join("\n");
 for (const match of css.matchAll(
   /(?:^|[;{}])\s*((?:padding|margin)(?:-(?:top|bottom|left|right|inline|block))?|(?:row-|column-)?gap)\s*:\s*([^;{}]+)/g,
 )) {
   for (const value of match[2].matchAll(/(-?\d+(?:\.\d+)?)px/g)) {
     checked++;
     if (Number(value[1]) % 8 !== 0)
-      errors.push(`app/console.css: ${match[1]}: ${match[2]}`);
+      errors.push(`app styles: ${match[1]}: ${match[2]}`);
   }
 }
 if (errors.length) {

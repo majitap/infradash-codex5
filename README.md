@@ -1,39 +1,42 @@
-# InfraDash 04
+# InfraDash 05
 
-[사이트 열기](https://majitap.github.io/infradash-codex4/)
+[사이트 열기](https://majitap.github.io/infradash-codex5/)
 
-GitLab 인프라의 성과와 현재 상태, 다음 조치를 한눈에 확인하는 한국어 운영 대시보드입니다. 좋아했던 이전 버전의 보라색과 둥근 카드를 계승하고, 8px 간격 체계와 Pretendard로 새롭게 정리했습니다.
+4번의 부드러운 보라색과 둥근 카드를 이어받아, 데이터 탐색과 재질·타이포그래피·상호작용을 다듬은 GitLab 인프라 대시보드입니다.
 
-## 달라진 점
+## 이번 버전
 
-- 새로운 브랜드, 사이드바, 상단 탐색, 개요 화면. 카드 24px 간격, 내부 24px 여백, 기본 화면 32px 여백.
-- 파이프라인 성공률과 실행 수는 선택한 7/30일의 같은 데이터로 계산합니다.
-- 날짜별 차트 선택, 실행 상태 필터, 파이프라인 상세와 단계별 상태.
-- 선택 기간의 원본 데이터를 CSV로 저장합니다.
-- 검색, 운영 알림 이동, 밝고 어두운 테마, 모바일 메뉴.
-- 파이프라인·러너·비용·DORA·구성도·보안 등 모든 기존 화면에 공통 여백과 글자 규칙 적용.
-- 폰트 자체 호스팅, 포커스 표시, 모션 감소, 본문 바로가기.
+- 빛과 깊이를 절제해 넣은 성공률 카드, 연속적인 숫자 전환, 공통 모션 토큰.
+- 7/30일 집계, 곡선·막대 전환, 이전 기간 비교, 포인터·키보드 날짜 탐색, CSV 저장.
+- 첫 화면의 서비스 맵과 러너 용량 전환, 58개 슬롯을 표현한 분할 게이지.
+- 13개 노드를 탐색하는 전체 구성도와 노드 인스펙터, 분류별 목록 보기.
+- 지출 항목별 도넛 차트와 절감안 시뮬레이션. 선택한 절감안을 CSV로 저장.
+- 원래 제공하던 파이프라인·러너·프로젝트·DORA·AI 예시·보안·권한·스토리지 화면 유지.
+- 자체 호스팅 Pretendard, 8px 간격, 키보드 포커스, 모바일 배치, 모션 감소, 다크 테마.
 
-상세 기준과 참고 자료는 [DESIGN.md](DESIGN.md)를 참고하세요.
+## 데이터와 범위
 
-## 데이터
+2026년 10월 31일 기준 모의 데이터입니다. 실제 GitLab, 클라우드, AI API를 연결하지 않습니다. 구성도의 연결은 미리 정의한 구성 관계 예시이며 실시간 네트워크 탐지 결과가 아닙니다. 등록 러너·클라우드 노드·시스템 구성 요소는 서로 다른 집계 범위입니다.
 
-2026년 10월 31일 기준 결정적 모의 데이터입니다. 실제 GitLab, 클라우드, AI API에 연결되지 않습니다. AI 응답과 조치 버튼은 예시 및 로컬 데모 상태를 표시합니다. 원본에 있던 여러 분석 데이터셋은 서로 다른 집계 범위이며, 첫 화면의 같은 항목은 같은 데이터에서 계산합니다.
+기간별 카드·차트·CSV는 같은 원본 집계에서 계산합니다. Gitaly 경고 수치는 인시던트의 91%와 일치하도록 정리했습니다. 비용 시뮬레이션은 제안 절감액을 단순 합산하며 실제 설정을 변경하지 않습니다. AI 대화는 예시 응답입니다.
 
-## 개발 및 배포
+## 개발과 검증
 
 ```sh
 npm ci
 npm run dev
-# http://localhost:3000/infradash-codex4/
+# http://localhost:3000/infradash-codex5/
 npm run check:spacing
+npm test
 npm run lint
 npx tsc --noEmit
 npm run build
 ```
 
-Next.js 정적 내보내기로 생성한 out/을 GitHub Pages에 배포합니다. main에 푸시하면 GitHub Actions에서 간격 검사·코드 검사·타입 검사·빌드 후 배포합니다.
+GitHub Actions에서 간격·테스트·코드·타입 검사와 전체 정적 빌드 후 out/을 GitHub Pages에 배포합니다. Next.js의 basePath는 /infradash-codex5입니다.
+
+설계 원칙은 [DESIGN.md](DESIGN.md)에 정리했습니다.
 
 ## 출처
 
-[infradash-codex3](https://github.com/majitap/infradash-codex3)와 [원본 Gemini Edition](https://github.com/majitap/infradash-gemni)의 데이터 모델, 분석 화면과 동작을 기반으로 했습니다. Git 기록과 원본 설명 [README.gemini.md](README.gemini.md)를 보존합니다. Pretendard와 Geist Mono의 라이선스는 public/licenses/에 포함합니다.
+[InfraDash 04](https://github.com/majitap/infradash-codex4)를 기반으로 제작했습니다. 최초 [Gemini Edition](https://github.com/majitap/infradash-gemni)의 데이터 모델과 분석 화면을 계승하고 Git 기록 및 [원본 설명](README.gemini.md)을 보존합니다. 폰트 라이선스는 public/licenses/에 있습니다.
