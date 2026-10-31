@@ -1,5 +1,6 @@
 "use client";
 
+import { OperationsBanner } from "@/components/admin/operations-banner";
 import { usePathname } from "next/navigation";
 import { findNavItem, normalizePath } from "@/lib/nav";
 
@@ -9,6 +10,7 @@ export function RouteContent({ children }: { children: React.ReactNode }) {
   const page = findNavItem(path);
   return (
     <div className="route-content @container/main">
+      <OperationsBanner />
       {!ownHeadings.includes(path) && (
         <div className="route-heading">
           <p className="eyebrow">GITLAB / MAJITAP</p>
@@ -22,7 +24,7 @@ export function RouteContent({ children }: { children: React.ReactNode }) {
           <span className="footer-dot" /> 데모 워크스페이스
         </span>
         <span>
-          2026.10.31 기준 모의 데이터 · 실제 인프라에 연결되지 않습니다.
+          예시 데이터가 포함된 대시보드 · 운영 정보는 연결 상태를 확인하세요.
         </span>
       </footer>
     </div>

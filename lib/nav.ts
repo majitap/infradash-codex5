@@ -10,80 +10,250 @@ import {
   NetworkIcon,
   ScrollTextIcon,
   ServerIcon,
+  Settings2Icon,
   ShieldCheckIcon,
   SirenIcon,
   SparklesIcon,
   UserCogIcon,
   UsersIcon,
   WorkflowIcon,
+  FileSearchIcon,
+  KeyRoundIcon,
+  PlugIcon,
   type LucideIcon,
-} from "lucide-react"
+} from "lucide-react";
 
-export type Tone = "indigo" | "emerald" | "amber" | "rose" | "sky" | "violet" | "teal" | "orange"
-
+export type Tone =
+  | "indigo"
+  | "emerald"
+  | "amber"
+  | "rose"
+  | "sky"
+  | "violet"
+  | "teal"
+  | "orange";
 export type NavItem = {
-  title: string
-  url: string
-  icon: LucideIcon
-  description: string
-  tone: Tone
-  keywords?: string[]
-}
-
-export type NavGroup = {
-  label: string
-  items: NavItem[]
-}
-
+  title: string;
+  url: string;
+  icon: LucideIcon;
+  description: string;
+  tone: Tone;
+  keywords?: string[];
+  children?: NavItem[];
+};
+export type NavGroup = { label: string; items: NavItem[] };
+const item = (
+  title: string,
+  url: string,
+  icon: LucideIcon,
+  description: string,
+  tone: Tone = "indigo",
+  children?: NavItem[],
+): NavItem => ({ title, url, icon, description, tone, children });
 export const navGroups: NavGroup[] = [
   {
-    label: "AI 분석 및 운영",
+    label: "워크스페이스",
     items: [
-      { title: "AI 운영 센터", url: "/ai-ops", icon: SparklesIcon, description: "Gemini 기반 인프라 이상 탐지 및 자동 대응", tone: "violet", keywords: ["gemini", "ai", "ops", "anomaly", "이상탐지"] },
-      { title: "인프라 구성도", url: "/topology", icon: NetworkIcon, description: "GitLab 풀스택 아키텍처 실시간 맵", tone: "sky", keywords: ["topology", "architecture", "map", "인프라", "토폴로지"] },
-      { title: "배포 성과 지표", url: "/dora", icon: GaugeIcon, description: "엔지니어링 배포 속도와 안정성 지표", tone: "emerald", keywords: ["dora", "velocity", "배포빈도", "리드타임"] },
-      { title: "클라우드 비용 분석", url: "/finops", icon: CoinsIcon, description: "클라우드 러너 및 스토리지 비용 최적화", tone: "amber", keywords: ["finops", "cost", "비용", "spot", "스팟"] },
+      item("개요", "/", LayoutDashboardIcon, "조직 전체 상태와 라이선스 현황"),
+      item(
+        "프로젝트",
+        "/projects",
+        FolderGit2Icon,
+        "저장소와 개발 활동",
+        "emerald",
+        [
+          item(
+            "프로젝트 현황",
+            "/projects",
+            FolderGit2Icon,
+            "프로젝트 활동과 건강도",
+            "emerald",
+          ),
+          item(
+            "커밋",
+            "/commits",
+            GitCommitHorizontalIcon,
+            "기여와 커밋 활동",
+            "violet",
+          ),
+          item(
+            "머지 리퀘스트",
+            "/merge-requests",
+            GitPullRequestIcon,
+            "리뷰와 머지 흐름",
+            "orange",
+          ),
+        ],
+      ),
+      item(
+        "CI/CD",
+        "/pipelines",
+        WorkflowIcon,
+        "파이프라인·러너·배포 성과",
+        "sky",
+        [
+          item(
+            "파이프라인",
+            "/pipelines",
+            WorkflowIcon,
+            "CI/CD 실행, 성공률과 실패 원인",
+            "sky",
+          ),
+          item("러너", "/runners", ServerIcon, "등록 러너와 처리 용량", "teal"),
+          item(
+            "배포 성과",
+            "/dora",
+            GaugeIcon,
+            "DORA 배포 속도와 안정성",
+            "emerald",
+          ),
+        ],
+      ),
+      item(
+        "인프라",
+        "/topology",
+        NetworkIcon,
+        "서비스 연결과 스토리지",
+        "sky",
+        [
+          item(
+            "인프라 구성도",
+            "/topology",
+            NetworkIcon,
+            "서비스 연결과 노드 상태",
+            "sky",
+          ),
+          item(
+            "스토리지",
+            "/storage",
+            HardDriveIcon,
+            "저장소·아티팩트·레지스트리",
+            "amber",
+          ),
+        ],
+      ),
+      item(
+        "인시던트",
+        "/incidents",
+        SirenIcon,
+        "장애 현황과 복구 기록",
+        "rose",
+      ),
     ],
   },
   {
-    label: "모니터링",
+    label: "관측과 인사이트",
     items: [
-      { title: "개요", url: "/", icon: LayoutDashboardIcon, description: "조직 전체 상태를 한눈에", tone: "indigo", keywords: ["overview", "home", "대시보드"] },
-      { title: "파이프라인", url: "/pipelines", icon: WorkflowIcon, description: "CI/CD 성공률, 소요 시간, 실패 원인", tone: "sky", keywords: ["pipelines", "ci", "cd", "jobs"] },
-      { title: "러너", url: "/runners", icon: ServerIcon, description: "러너 상태와 용량", tone: "teal", keywords: ["runners", "executor"] },
-      { title: "인시던트", url: "/incidents", icon: SirenIcon, description: "장애 현황, MTTR, 서비스 가용성", tone: "rose", keywords: ["incidents", "on-call", "장애"] },
-    ],
-  },
-  {
-    label: "개발 활동",
-    items: [
-      { title: "커밋", url: "/commits", icon: GitCommitHorizontalIcon, description: "주간 커밋 순위와 활동 패턴", tone: "violet", keywords: ["commits", "leaderboard", "순위", "기여"] },
-      { title: "머지 리퀘스트", url: "/merge-requests", icon: GitPullRequestIcon, description: "리뷰 대기, 처리량, 머지 소요 시간", tone: "orange", keywords: ["merge requests", "mr", "review", "리뷰"] },
-      { title: "프로젝트", url: "/projects", icon: FolderGit2Icon, description: "프로젝트 활동과 건강도", tone: "emerald", keywords: ["projects", "repositories", "저장소"] },
+      item(
+        "로그 분석",
+        "/logs",
+        FileSearchIcon,
+        "LGTM · Loki 로그 검색과 분석",
+        "teal",
+      ),
+      item(
+        "클라우드 비용",
+        "/finops",
+        CoinsIcon,
+        "지출과 절감안 시뮬레이션",
+        "amber",
+      ),
+      item(
+        "AI 운영 센터",
+        "/ai-ops",
+        SparklesIcon,
+        "인프라 진단과 조치 예시",
+        "violet",
+      ),
     ],
   },
   {
     label: "관리",
     items: [
-      { title: "사용자", url: "/users", icon: UsersIcon, description: "계정, 입사자/퇴사자, 2FA", tone: "indigo", keywords: ["users", "members", "멤버", "계정"] },
-      { title: "권한 관리", url: "/access", icon: UserCogIcon, description: "접근 요청 승인, 그룹 역할, 관리자 계정", tone: "orange", keywords: ["access", "permissions", "roles", "admin", "권한", "승인", "인가", "관리자"] },
-      { title: "스토리지", url: "/storage", icon: HardDriveIcon, description: "저장소, 아티팩트, 레지스트리 사용량", tone: "amber", keywords: ["storage", "disk", "artifacts", "registry"] },
-      { title: "보안", url: "/security", icon: ShieldCheckIcon, description: "취약점, 스캐너, 컴플라이언스", tone: "rose", keywords: ["security", "vulnerabilities", "취약점"] },
-      { title: "감사 로그", url: "/audit", icon: ScrollTextIcon, description: "누가 무엇을 언제 변경했는지", tone: "sky", keywords: ["audit", "log", "events"] },
-      { title: "업그레이드", url: "/upgrade", icon: CircleArrowUpIcon, description: "버전 업그레이드 경로와 체크리스트", tone: "violet", keywords: ["upgrade", "version", "release"] },
+      item(
+        "보안·접근",
+        "/security",
+        ShieldCheckIcon,
+        "보안·사용자·권한·감사",
+        "rose",
+        [
+          item(
+            "보안 현황",
+            "/security",
+            ShieldCheckIcon,
+            "취약점과 보안 검사",
+            "rose",
+          ),
+          item("사용자", "/users", UsersIcon, "사용자 계정과 활동", "indigo"),
+          item(
+            "권한 관리",
+            "/access",
+            UserCogIcon,
+            "접근 요청과 관리자 권한",
+            "orange",
+          ),
+          item(
+            "감사 로그",
+            "/audit",
+            ScrollTextIcon,
+            "사용자와 설정 변경 이력",
+            "sky",
+          ),
+        ],
+      ),
+      item(
+        "관리자",
+        "/admin",
+        Settings2Icon,
+        "운영 설정과 연동 관리",
+        "indigo",
+        [
+          item(
+            "운영 설정",
+            "/admin",
+            Settings2Icon,
+            "관리자 모드와 GitLab 메인터넌스",
+          ),
+          item(
+            "라이선스",
+            "/admin/license",
+            KeyRoundIcon,
+            "좌석 수량과 라이선스 만료",
+            "amber",
+          ),
+          item(
+            "연동 설정",
+            "/admin/integrations",
+            PlugIcon,
+            "GitLab·LGTM 연결 준비",
+            "teal",
+          ),
+          item(
+            "버전 업그레이드",
+            "/upgrade",
+            CircleArrowUpIcon,
+            "업그레이드 경로와 점검",
+            "violet",
+          ),
+        ],
+      ),
     ],
   },
-]
-
-export const navItems: NavItem[] = navGroups.flatMap((g) => g.items)
-
-/** usePathname() may carry a trailing slash because of `trailingSlash: true`. */
+];
+export const topLevelMenuCount = navGroups.reduce(
+  (n, g) => n + g.items.length,
+  0,
+);
+const flatten = (items: NavItem[]): NavItem[] =>
+  items.flatMap((n) => n.children ?? [n]);
+export const searchNavGroups = navGroups.map((g) => ({
+  ...g,
+  items: flatten(g.items),
+}));
+export const navItems = searchNavGroups.flatMap((g) => g.items);
 export function normalizePath(pathname: string | null) {
-  if (!pathname || pathname === "/") return "/"
-  return pathname.replace(/\/+$/, "")
+  return pathname?.replace(/\/+$/, "") || "/";
 }
-
 export function findNavItem(pathname: string | null) {
-  const path = normalizePath(pathname)
-  return navItems.find((item) => item.url === path)
+  return navItems.find((n) => n.url === normalizePath(pathname));
 }

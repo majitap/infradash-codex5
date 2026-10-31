@@ -7,6 +7,7 @@ import { Bell, ChevronRight, Search } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { useCommandMenu } from "@/components/layout/command-menu";
+import { useOperations } from "@/components/admin/operations-provider";
 import { findNavItem } from "@/lib/nav";
 import {
   DropdownMenu,
@@ -20,6 +21,7 @@ import {
 
 export function SiteHeader() {
   const { setOpen } = useCommandMenu();
+  const { adminMode, configured } = useOperations();
   const title = findNavItem(usePathname())?.title ?? "개요";
   const [shortcut, setShortcut] = useState("Ctrl K");
   useEffect(() => {
@@ -72,6 +74,12 @@ export function SiteHeader() {
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
+        <Link
+          className={adminMode ? "ops-admin-link active" : "ops-admin-link"}
+          href="/admin"
+        >
+          {adminMode ? (configured ? "관리자 모드" : "데모 관리자") : "관리자"}
+        </Link>
         <ThemeToggle />
       </div>
     </header>

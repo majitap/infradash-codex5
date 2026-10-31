@@ -15,7 +15,7 @@ import {
   CommandShortcut,
 } from "@/components/ui/command"
 import { activeProjects, committers } from "@/lib/mock-data"
-import { navGroups } from "@/lib/nav"
+import { searchNavGroups as navGroups } from "@/lib/nav"
 import { TONES } from "@/lib/tones"
 
 type CommandMenuContextValue = {

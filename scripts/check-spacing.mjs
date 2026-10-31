@@ -23,7 +23,7 @@ for (const file of [...walk("app"), ...walk("components")].filter((file) =>
       errors.push(`${file}: ${match[0]} is outside the 8px scale`);
   }
 }
-const css = ["app/console.css", "app/atelier.css"]
+const css = ["app/console.css", "app/atelier.css", "app/operations.css"]
   .map((file) => fs.readFileSync(file, "utf8"))
   .join("\n");
 for (const match of css.matchAll(

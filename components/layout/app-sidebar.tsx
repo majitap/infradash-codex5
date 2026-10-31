@@ -1,24 +1,10 @@
 "use client";
-
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  ArrowUpRight,
-  ChevronDown,
-  CircleHelp,
-  FolderGit2,
-  Gauge,
-  HardDrive,
-  LayoutDashboard,
-  Network,
-  Server,
-  ShieldCheck,
-  Siren,
-  Sparkles,
-  Workflow,
-  Wallet,
-} from "lucide-react";
+import { ChevronDown } from "lucide-react";
+import { navGroups, normalizePath, type NavItem } from "@/lib/nav";
+import { useOperations } from "@/components/admin/operations-provider";
 import {
   Sidebar,
   SidebarContent,
@@ -26,39 +12,60 @@ import {
   SidebarHeader,
   useSidebar,
 } from "@/components/ui/sidebar";
-
-const sections = [
-  {
-    label: "워크스페이스",
-    items: [
-      { label: "개요", href: "/", icon: LayoutDashboard },
-      { label: "파이프라인", href: "/pipelines", icon: Workflow },
-      { label: "러너", href: "/runners", icon: Server },
-      { label: "인프라 구성도", href: "/topology", icon: Network },
-      { label: "인시던트", href: "/incidents", icon: Siren },
-    ],
-  },
-  {
-    label: "인사이트",
-    items: [
-      { label: "배포 성과", href: "/dora", icon: Gauge },
-      { label: "클라우드 비용", href: "/finops", icon: Wallet },
-      { label: "AI 운영 센터", href: "/ai-ops", icon: Sparkles },
-    ],
-  },
-  {
-    label: "관리",
-    items: [
-      { label: "프로젝트", href: "/projects", icon: FolderGit2 },
-      { label: "스토리지", href: "/storage", icon: HardDrive },
-      { label: "보안", href: "/security", icon: ShieldCheck },
-    ],
-  },
-];
-
+function NavigationItem({ item, close }: { item: NavItem; close: () => void }) {
+  const path = normalizePath(usePathname());
+  const active =
+    item.children?.some((child) => child.url === path) ?? item.url === path;
+  const [expanded, setExpanded] = React.useState<{
+    path: string;
+    open: boolean;
+  } | null>(null);
+  const open = expanded?.path === path ? expanded.open : active;
+  return (
+    <div className="nav-family" data-top-level-menu>
+      <div className="nav-parent">
+        <Link
+          href={item.url}
+          onClick={close}
+          className="nav-link"
+          aria-current={path === item.url ? "page" : undefined}
+          data-active={active}
+        >
+          <item.icon size={20} strokeWidth={1.7} />
+          <span>{item.title}</span>
+        </Link>
+        {item.children && (
+          <button
+            className="nav-disclosure"
+            aria-label={item.title + " 하위 메뉴"}
+            aria-expanded={open}
+            aria-controls={"nav-" + item.url.slice(1)}
+            onClick={() => setExpanded({ path, open: !open })}
+          >
+            <ChevronDown size={16} className={open ? "is-open" : ""} />
+          </button>
+        )}
+      </div>
+      {item.children && open && (
+        <div id={"nav-" + item.url.slice(1)} className="nav-children">
+          {item.children.map((child) => (
+            <Link
+              key={child.url}
+              href={child.url}
+              onClick={close}
+              aria-current={path === child.url ? "page" : undefined}
+            >
+              {child.title}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
-  const pathname = usePathname()?.replace(/\/+$/, "") || "/";
   const { setOpenMobile } = useSidebar();
+  const { configured, session, adminMode } = useOperations();
   const close = () => setOpenMobile(false);
   return (
     <Sidebar collapsible="offcanvas" className="app-sidebar" {...props}>
@@ -115,69 +122,33 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           </div>
         </div>
         <nav aria-label="주 메뉴" className="nav-sections">
-          {sections.map((section) => (
-            <div className="nav-section" key={section.label}>
-              <p className="nav-label">{section.label}</p>
+          {navGroups.map((group) => (
+            <div className="nav-section" key={group.label}>
+              <p className="nav-label">{group.label}</p>
               <div className="nav-items">
-                {section.items.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={close}
-                    aria-current={pathname === item.href ? "page" : undefined}
-                    className="nav-link"
-                  >
-                    <item.icon size={20} strokeWidth={1.7} />
-                    <span>{item.label}</span>
-                    {item.href === "/incidents" && (
-                      <span className="nav-count">2</span>
-                    )}
-                  </Link>
+                {group.items.map((item) => (
+                  <NavigationItem key={item.url} item={item} close={close} />
                 ))}
               </div>
             </div>
           ))}
-          <details className="more-nav">
-            <summary>
-              더 보기
-              <ChevronDown size={16} />
-            </summary>
-            <div className="nav-items">
-              {[
-                { label: "커밋", href: "/commits" },
-                { label: "머지 리퀘스트", href: "/merge-requests" },
-                { label: "사용자", href: "/users" },
-                { label: "권한 관리", href: "/access" },
-                { label: "감사 로그", href: "/audit" },
-                { label: "버전 업그레이드", href: "/upgrade" },
-              ].map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="nav-link"
-                  onClick={close}
-                  aria-current={pathname === item.href ? "page" : undefined}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-          </details>
         </nav>
       </SidebarContent>
       <SidebarFooter className="nav-footer">
-        <Link href="/upgrade" className="nav-support" onClick={close}>
-          <CircleHelp size={18} />
-          <span>운영 가이드</span>
-          <ArrowUpRight size={16} />
-        </Link>
         <div className="sidebar-person">
-          <span className="person-avatar">지</span>
+          <span className="person-avatar">M</span>
           <div>
-            <strong>김지원</strong>
-            <span>인프라 관리자</span>
+            <strong>{session?.actor.name ?? "Majitap"}</strong>
+            <span>
+              {adminMode
+                ? configured
+                  ? "관리자 모드"
+                  : "데모 관리자 모드"
+                : configured
+                  ? "운영 워크스페이스"
+                  : "데모 워크스페이스"}
+            </span>
           </div>
-          <span className="person-dot" title="온라인" />
         </div>
       </SidebarFooter>
     </Sidebar>
