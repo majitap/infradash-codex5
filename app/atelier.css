@@ -3613,3 +3613,29 @@ body {
     word-break: keep-all;
   }
 }
+.dark .red-tag {
+  color: #d8a1aa;
+}
+.dark .amber-tag {
+  color: #ddbf91;
+}
+.dark .purple-tag {
+  color: #c1b1df;
+}
+.dark .attention-number {
+  color: #91879f;
+}
+.dark .peek-status {
+  color: #91cbb0;
+}
+.dark .peek-status.warning,
+.dark .inspector-status.warning {
+  color: #ddbf91;
+}
+.dark .flow-axis,
+.dark .flow-map-annotation {
+  color: var(--muted-foreground);
+}
+.dark .flow-previous {
+  stroke: #878ba1;
+}
