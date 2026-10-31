@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { AnimatedNumber } from "@/components/overview/animated-number";
 import { FlowChart } from "@/components/overview/flow-chart";
 import { InfrastructureCard } from "@/components/overview/infrastructure-card";
+import { LiveInfrastructureStatus } from "@/components/overview/live-infrastructure-status";
 import { PipelineDetail } from "@/components/overview/pipeline-detail";
 import { pipelineStatus } from "@/components/overview/pipeline-status";
 import {
@@ -141,6 +142,7 @@ export function OverviewView() {
           </button>
         </div>
       </div>
+      <LiveInfrastructureStatus />
       <div className="v5-overview-toolbar">
         <div className="v5-period-control" role="group" aria-label="조회 기간">
           {([7, 30] as const).map((n) => (

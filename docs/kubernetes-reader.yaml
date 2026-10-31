@@ -1,0 +1,25 @@
+# Template only. Apply in each monitored namespace after replacing gitlab as needed.
+# Map the collector's IAM role to the infradash-readers group through an EKS access entry.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: infradash-workload-reader
+  namespace: gitlab
+rules:
+  - apiGroups: [apps]
+    resources: [deployments, statefulsets]
+    verbs: [get, list]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: infradash-workload-reader
+  namespace: gitlab
+subjects:
+  - kind: Group
+    name: infradash-readers
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: infradash-workload-reader
+  apiGroup: rbac.authorization.k8s.io

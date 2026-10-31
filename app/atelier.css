@@ -3639,3 +3639,308 @@ body {
 .dark .flow-previous {
   stroke: #878ba1;
 }
+
+/* Live infrastructure status. Public demos never imply a successful live check. */
+.nav-link {
+  font-size: 17px;
+  min-height: 48px;
+}
+.nav-label {
+  font-size: 13px;
+  line-height: 24px;
+}
+.more-nav summary {
+  font-size: 15px;
+}
+.nav-support {
+  font-size: 14px;
+}
+.infra-health {
+  padding: 24px;
+}
+.infra-health-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.infra-health-heading .section-kicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.infra-health-heading h2 {
+  margin-top: 8px;
+}
+.infra-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 8px 16px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+.infra-health-summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  margin-top: 24px;
+  background: var(--subtle);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  color: var(--muted-foreground);
+}
+.infra-health-summary > svg {
+  flex-shrink: 0;
+}
+.infra-health-summary > div {
+  flex: 1;
+  min-width: 0;
+}
+.infra-health-summary strong {
+  display: block;
+  color: var(--foreground);
+  font-size: 15px;
+  font-weight: 650;
+}
+.infra-health-summary p {
+  font-size: 12px;
+  line-height: 1.8;
+  margin-top: 8px;
+}
+.infra-health-summary.healthy {
+  background: color-mix(in srgb, #42976d 7%, var(--card));
+  color: #287549;
+}
+.infra-health-summary.degraded,
+.infra-health-summary.forbidden {
+  color: #946516;
+}
+.infra-health-summary.down {
+  color: #b3485c;
+}
+.infra-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  min-height: 40px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 12px;
+  font-size: 12px;
+  color: var(--foreground);
+  white-space: nowrap;
+}
+.infra-refresh:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.infra-checks {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+.infra-check {
+  min-width: 0;
+  border-right: 1px solid var(--border);
+  padding-right: 16px;
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 8px;
+}
+.infra-check:last-child {
+  border-right: 0;
+  padding-right: 0;
+}
+.infra-check > span {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.infra-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted-foreground);
+  font-size: 18px;
+  font-weight: 650;
+}
+.infra-state i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.infra-state.healthy {
+  color: #287549;
+}
+.infra-state.degraded,
+.infra-state.forbidden {
+  color: #946516;
+}
+.infra-state.down {
+  color: #b3485c;
+}
+.infra-check p {
+  font-size: 11px;
+  line-height: 1.8;
+  color: var(--muted-foreground);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.infra-check small {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.infra-ha-details {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--subtle);
+}
+.infra-ha-details > span {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+.infra-ha-details strong {
+  color: var(--foreground);
+  font-weight: 600;
+}
+.infra-ha-details > span > span {
+  color: var(--muted-foreground);
+}
+.infra-health-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  border-top: 1px solid var(--border);
+  margin-top: 24px;
+  padding-top: 16px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.infra-health-bottom > span {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  line-height: 1.8;
+}
+.infra-health-bottom > span > svg {
+  flex-shrink: 0;
+}
+.infra-health-bottom summary {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  list-style: none;
+  color: var(--primary);
+}
+.infra-health-bottom summary::-webkit-details-marker {
+  display: none;
+}
+.infra-health-bottom details[open] summary svg {
+  transform: rotate(180deg);
+}
+.infra-health-bottom details > div {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--subtle);
+  display: grid;
+  gap: 8px;
+  line-height: 1.8;
+}
+.infra-health-bottom a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--primary);
+}
+.infra-scope-note {
+  margin-top: 16px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  line-height: 1.8;
+}
+.dark .infra-state.healthy,
+.dark .infra-health-summary.healthy {
+  color: #91cbb0;
+}
+.dark .infra-state.degraded,
+.dark .infra-state.forbidden,
+.dark .infra-health-summary.degraded,
+.dark .infra-health-summary.forbidden {
+  color: #ddbf91;
+}
+.dark .infra-state.down,
+.dark .infra-health-summary.down {
+  color: #efa5b3;
+}
+@media (max-width: 1199px) {
+  .infra-checks {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .infra-check {
+    border: 0;
+  }
+}
+@media (max-width: 767px) {
+  .infra-health {
+    padding: 24px 16px;
+  }
+  .infra-health-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .infra-health-heading h2 {
+    font-size: 20px;
+  }
+  .infra-health-summary {
+    flex-wrap: wrap;
+    padding: 16px;
+    gap: 16px;
+  }
+  .infra-health-summary > div {
+    flex-basis: calc(100% - 40px);
+  }
+  .infra-health-summary strong {
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .infra-refresh {
+    margin-left: auto;
+  }
+  .infra-checks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 16px;
+  }
+  .infra-state {
+    font-size: 17px;
+  }
+  .infra-health-bottom {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .infra-health-bottom summary {
+    justify-content: flex-start;
+  }
+}

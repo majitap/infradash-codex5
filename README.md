@@ -40,3 +40,9 @@ GitHub Actions에서 간격·테스트·코드·타입 검사와 전체 정적 �
 ## 출처
 
 [InfraDash 04](https://github.com/majitap/infradash-codex4)를 기반으로 제작했습니다. 최초 [Gemini Edition](https://github.com/majitap/infradash-gemni)의 데이터 모델과 분석 화면을 계승하고 Git 기록 및 [원본 설명](README.gemini.md)을 보존합니다. 폰트 라이선스는 public/licenses/에 있습니다.
+
+## 실제 인프라 상태 연동 준비
+
+개요 최상단에 실제 상태 패널을 추가했습니다. GitLab 웹·API·readiness, EKS 제어 영역, HA 워크로드의 목표/준비 복제본을 구분합니다. 아직 실제 환경 설정이 없어 공개 사이트에는 미연동으로 표시하며, 기존 분석 화면은 계속 모의 데이터입니다.
+
+[내일 준비할 정보와 로컬 수집기 실행 방법](docs/LIVE-DATA-SETUP.md)을 확인하세요. 읽기 전용 수집기, 환경 변수 예시, IAM/RBAC 템플릿, 응답 스키마와 실패·만료 처리까지 포함했습니다. 수집기 운영 배포와 SSO 연결은 환경 정보 확인 후 진행합니다. 관리자 쓰기 권한은 사용하지 않습니다.
