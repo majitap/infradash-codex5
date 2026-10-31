@@ -15,7 +15,7 @@
 - 13개 노드를 탐색하는 전체 구성도와 노드 인스펙터, 분류별 목록 보기.
 - 지출 항목별 도넛 차트와 절감안 시뮬레이션. 선택한 절감안을 CSV로 저장.
 - 원래 제공하던 파이프라인·러너·프로젝트·DORA·AI 예시·보안·권한·스토리지 화면 유지.
-- 자체 호스팅 Pretendard, 8px 간격, 키보드 포커스, 모바일 배치, 모션 감소, 다크 테마.
+- 자체 호스팅 나눔스퀘어 네오, 8px 간격, 키보드 포커스, 모바일 배치, 모션 감소, 다크 테마.
 
 ## 데이터와 범위
 
@@ -39,6 +39,8 @@ npm run build
 GitHub Actions에서 간격·테스트·코드·타입 검사와 전체 정적 빌드 후 out/을 GitHub Pages에 배포합니다. Next.js의 basePath는 /infradash-codex5입니다.
 
 설계 원칙은 [DESIGN.md](DESIGN.md)에 정리했습니다.
+
+글꼴은 [네이버 공식 나눔스퀘어 네오](https://campaign.naver.com/nanumsquare_neo/)의 수정하지 않은 가변 WOFF2를 자체 호스팅합니다. 저작권 안내와 SIL OFL 1.1 전문은 [NanumSquareNeo.txt](public/licenses/NanumSquareNeo.txt)에 포함했습니다.
 
 ## 출처
 

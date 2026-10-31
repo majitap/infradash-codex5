@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
-import "@fontsource-variable/geist-mono";
-import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
+import localFont from "next/font/local";
+const nanumSquareNeo = localFont({
+  src: "./fonts/NanumSquareNeo-Variable.woff2",
+  variable: "--font-nanum",
+  weight: "300 900",
+  display: "swap",
+});
 import "./globals.css";
 import "./console.css";
 import "./atelier.css";
@@ -31,7 +36,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ko" suppressHydrationWarning className="h-full">
+    <html
+      lang="ko"
+      suppressHydrationWarning
+      className={`h-full ${nanumSquareNeo.variable}`}
+    >
       <body className="min-h-full antialiased">
         <a className="skip-to-content" href="#main-content">
           본문으로 건너뛰기

@@ -637,7 +637,7 @@
 }
 .logql-query input {
   flex: 1;
-  font-family: var(--font-geist-mono), monospace;
+  font-family: var(--font-sans);
 }
 .logql-query select {
   width: auto;
@@ -786,7 +786,7 @@
   background: var(--soft-purple);
 }
 .log-line {
-  font-family: var(--font-geist-mono), monospace;
+  font-family: var(--font-sans);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1018,5 +1018,109 @@
   }
   .log-results-footer {
     flex-direction: column;
+  }
+}
+
+/* Compact workspace summary and a stronger navigation hierarchy. */
+.nav-link,
+.nav-link[aria-current="page"],
+.nav-children a,
+.nav-label {
+  font-weight: 700;
+}
+.overview-status-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  line-height: 24px;
+  min-height: 32px;
+}
+.license-compact,
+.infra-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+}
+.license-compact {
+  border-radius: 8px;
+}
+.license-compact strong {
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+.license-compact strong > span {
+  color: var(--muted-foreground);
+  font-weight: 400;
+  padding: 0;
+}
+.license-compact small {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.license-compact:hover > span {
+  color: var(--primary);
+}
+.overview-status-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+}
+.infra-compact-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted-foreground);
+  font-weight: 550;
+}
+.infra-compact-state > i {
+  width: 6px;
+  height: 6px;
+  background: currentColor;
+  border-radius: 50%;
+}
+.infra-compact-state.healthy {
+  color: var(--green);
+}
+.infra-compact-state.degraded,
+.infra-compact-state.forbidden {
+  color: #967023;
+}
+.infra-compact-state.down {
+  color: #b15068;
+}
+.infra-compact-action {
+  width: 32px;
+  height: 32px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 8px;
+}
+.infra-compact-action:hover {
+  background: var(--soft-purple);
+  color: var(--primary);
+}
+.infra-compact-action:disabled {
+  opacity: 0.5;
+}
+.dark .infra-compact-state.degraded,
+.dark .infra-compact-state.forbidden {
+  color: #dfbb7c;
+}
+.dark .infra-compact-state.down {
+  color: #eca0b3;
+}
+@media (max-width: 767px) {
+  .overview-status-line {
+    gap: 8px 16px;
+  }
+  .overview-status-divider {
+    display: none;
   }
 }

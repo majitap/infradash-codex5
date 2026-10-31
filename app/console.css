@@ -34,14 +34,7 @@
   --pink: #ef9aaa;
 }
 body {
-  font-family:
-    "Pretendard Variable",
-    Pretendard,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Apple SD Gothic Neo",
-    "Malgun Gothic",
-    sans-serif;
+  font-family: var(--font-sans);
   color: var(--foreground);
   background: var(--background);
   font-size: 16px;

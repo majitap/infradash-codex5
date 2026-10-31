@@ -7,9 +7,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Pretendard Variable", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
-  --font-mono: "Geist Mono Variable", ui-monospace, "Cascadia Mono", Consolas, monospace;
-  --font-heading: "Pretendard Variable", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-sans: var(--font-nanum), "Malgun Gothic", sans-serif;
+  --font-mono: var(--font-nanum), "Malgun Gothic", sans-serif;
+  --font-heading: var(--font-nanum), "Malgun Gothic", sans-serif;
   /* Enlarge the original type scale while preserving its card composition. */
   --text-xs: 0.875rem;
   --text-xs--line-height: 1.65;
@@ -231,23 +231,57 @@
   background: #6155ed;
   color: white;
 }
-.skip-to-content:focus { top: 1rem; }
-main:focus { outline: none; }
-main p { text-wrap: pretty; }
-main :is(h1,h2,h3,h4) { word-break: keep-all; overflow-wrap: anywhere; }
-main h3.text-xs { font-size: 1rem; line-height: 1.6; }
-main .truncate { overflow-wrap: anywhere; }
-main .bg-slate-950 .text-slate-400 { color: #b7c3d5; }
-aside .bg-slate-950 .text-slate-400 { color: #b7c3d5; }
-button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
-:is(button,a,input,textarea,select):focus-visible { outline: 2px solid #6155ed; outline-offset: 3px; }
+.skip-to-content:focus {
+  top: 1rem;
+}
+main:focus {
+  outline: none;
+}
+main p {
+  text-wrap: pretty;
+}
+main :is(h1, h2, h3, h4) {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+main h3.text-xs {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+main .truncate {
+  overflow-wrap: anywhere;
+}
+main .bg-slate-950 .text-slate-400 {
+  color: #b7c3d5;
+}
+aside .bg-slate-950 .text-slate-400 {
+  color: #b7c3d5;
+}
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+:is(button, a, input, textarea, select):focus-visible {
+  outline: 2px solid #6155ed;
+  outline-offset: 3px;
+}
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 @layer utilities {
   .thin-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: color-mix(in oklab, var(--foreground) 18%, transparent) transparent;
+    scrollbar-color: color-mix(in oklab, var(--foreground) 18%, transparent)
+      transparent;
   }
 }

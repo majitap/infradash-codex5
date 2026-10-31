@@ -3,6 +3,35 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { useOperations } from "./operations-provider";
 import { licenseRemaining, kstTime } from "@/lib/operations";
+export function LicenseCompact() {
+  const { license, configured, loading } = useOperations();
+  const available = license?.state === "available";
+  const used = available ? license.activeUsers : null;
+  const total = available ? license.userLimit : null;
+  const status = loading
+    ? "조회 중"
+    : available
+      ? null
+      : !configured || license?.state === "unconfigured"
+        ? "미연동"
+        : "조회 불가";
+  return (
+    <Link
+      href="/admin/license"
+      className="license-compact"
+      aria-label={`라이선스 사용 ${used ?? "확인 불가"}, 보유 ${total ?? "확인 불가"}${status ? ` · ${status}` : ""}`}
+      title="라이선스 사용 중 / 보유 좌석 · 상세 보기"
+    >
+      <span>라이선스</span>
+      <strong>
+        {used ?? "—"}
+        <span>/</span>
+        {total ?? "—"}
+      </strong>
+      {status && <small>{status}</small>}
+    </Link>
+  );
+}
 export function LicenseStrip({ detail = false }: { detail?: boolean }) {
   const { license, configured, loading, refresh } = useOperations();
   const available = license?.state === "available";
